@@ -6,14 +6,17 @@ import { toast } from "sonner";
 import JSZip from "jszip";
 import {
   Download,
+  Link2,
   Loader2,
   Pause,
   Play,
   Plus,
   Scissors,
   Sparkles,
+  Subtitles,
   Trash2,
   Upload,
+  ScanFace,
 } from "lucide-react";
 import type { ClipMarker } from "@/lib/constants";
 import {
@@ -21,6 +24,8 @@ import {
   exportClips,
   suggestClipsFromSilence,
 } from "@/lib/ffmpeg";
+import { buildReframeKeyframes } from "@/lib/mediapipe";
+import { extractAudioBlobFromVideo, transcribeAudioBlob, type TranscriptSegment } from "@/lib/whisper";
 import { useAuthStore, useProjectStore } from "@/lib/store";
 import { cn, formatBytes, formatDuration, uid } from "@/lib/utils";
 
@@ -45,6 +50,13 @@ export default function EditorPage() {
   const [progressLabel, setProgressLabel] = useState("");
   const [suggesting, setSuggesting] = useState(false);
   const [aspectPreview, setAspectPreview] = useState<"16:9" | "9:16">("9:16");
+  const [importUrl, setImportUrl] = useState("");
+  const [importingUrl, setImportingUrl] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcriptStatus, setTranscriptStatus] = useState("");
+  const [segments, setSegments] = useState<TranscriptSegment[]>([]);
+  const [reframing, setReframing] = useState(false);
+  const [reframeMode, setReframeMode] = useState<"face" | "center">("center");
 
   const selected = useMemo(
     () => clips.find((c) => c.id === selectedId) ?? null,
@@ -175,26 +187,117 @@ export default function EditorPage() {
       } catch {
         gaps = [];
       }
-      const suggestions = suggestClipsFromSilence(duration, gaps);
-      const mapped = suggestions.map((s) => ({
-        id: uid("clip"),
-        inPoint: s.inPoint,
-        outPoint: s.outPoint,
-        label: s.label,
-        caption: s.reason,
-      }));
+
+      const transcriptText = segments.map((s) => s.text).join(" ");
+      const apiRes = await fetch("/api/ai/auto-clip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          duration,
+          gaps,
+          transcriptText,
+          targetLen: 20,
+          maxClips: 5,
+        }),
+      }).catch(() => null);
+
+      let mapped: ClipMarker[] = [];
+      if (apiRes?.ok) {
+        const data = await apiRes.json();
+        mapped = (data.suggestions ?? []).map(
+          (s: { inPoint: number; outPoint: number; label: string; reason: string }) => ({
+            id: uid("clip"),
+            inPoint: s.inPoint,
+            outPoint: s.outPoint,
+            label: s.label,
+            caption: s.reason,
+          })
+        );
+      } else {
+        const suggestions = suggestClipsFromSilence(duration, gaps);
+        mapped = suggestions.map((s) => ({
+          id: uid("clip"),
+          inPoint: s.inPoint,
+          outPoint: s.outPoint,
+          label: s.label,
+          caption: s.reason,
+        }));
+      }
+
       setClips(mapped);
       setSelectedId(mapped[0]?.id ?? null);
-      toast.success(
-        gaps.length
-          ? `${mapped.length} saran clip (silence detect)`
-          : `${mapped.length} saran clip (segment fallback)`
-      );
+      toast.success(`${mapped.length} saran clip`);
     } catch (err) {
       console.error(err);
       toast.error("Gagal membuat saran clip");
     } finally {
       setSuggesting(false);
+    }
+  }
+
+  async function runUrlImport() {
+    if (!importUrl.trim()) return;
+    setImportingUrl(true);
+    try {
+      const res = await fetch("/api/url-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim(), title }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Import gagal");
+        return;
+      }
+      toast.message(data.message ?? "URL di-queue");
+    } finally {
+      setImportingUrl(false);
+    }
+  }
+
+  async function runTranscript() {
+    if (!file) return;
+    setTranscribing(true);
+    setTranscriptStatus("starting");
+    try {
+      const audio = await extractAudioBlobFromVideo(file);
+      const result = await transcribeAudioBlob(audio, (status, p) => {
+        setTranscriptStatus(
+          `${status}${typeof p === "number" ? ` ${Math.round(p * 100)}%` : ""}`
+        );
+      });
+      setSegments(result.segments);
+      if (!result.segments.length) {
+        toast.message("Whisper tidak menghasilkan teks — coba video berbahasa jelas / lebih pendek");
+      } else {
+        toast.success(`${result.segments.length} segment transcript (${result.provider})`);
+        if (selectedId && result.segments[0]) {
+          updateSelected({ caption: result.segments.map((s) => s.text).join(" ") });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Transkripsi gagal");
+    } finally {
+      setTranscribing(false);
+    }
+  }
+
+  async function runReframe() {
+    const v = videoRef.current;
+    if (!v || !duration) return;
+    setReframing(true);
+    try {
+      const result = await buildReframeKeyframes(v, { mode: "face", stepSec: 1 });
+      setReframeMode(result.mode);
+      setAspectPreview("9:16");
+      toast.success(
+        result.mode === "face"
+          ? `Face track: ${result.keyframes.length} keyframes`
+          : "Center crop 9:16 (MediaPipe fallback)"
+      );
+    } finally {
+      setReframing(false);
     }
   }
 
@@ -271,17 +374,44 @@ export default function EditorPage() {
       </div>
 
       {!file ? (
-        <div
-          {...getRootProps()}
-          className={cn(
-            "card flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-3 border-dashed p-8 text-center",
-            isDragActive && "border-accent bg-accent/5"
-          )}
-        >
-          <input {...getInputProps()} />
-          <Upload className="h-8 w-8 text-accent" />
-          <p className="font-medium">Drop video di sini, atau klik untuk pilih</p>
-          <p className="text-sm text-muted">MP4 / MOV / WEBM · max 2GB · diproses lokal</p>
+        <div className="space-y-4">
+          <div
+            {...getRootProps()}
+            className={cn(
+              "card flex min-h-[240px] cursor-pointer flex-col items-center justify-center gap-3 border-dashed p-8 text-center",
+              isDragActive && "border-accent bg-accent/5"
+            )}
+          >
+            <input {...getInputProps()} />
+            <Upload className="h-8 w-8 text-accent" />
+            <p className="font-medium">Drop video di sini, atau klik untuk pilih</p>
+            <p className="text-sm text-muted">MP4 / MOV / WEBM · max 2GB · FFmpeg.wasm lokal</p>
+          </div>
+          <div className="card p-4">
+            <p className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <Link2 className="h-4 w-4 text-accent" />
+              Atau paste URL (YouTube/TikTok/…)
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                className="field"
+                placeholder="https://..."
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn btn-soft"
+                disabled={importingUrl || !importUrl.trim()}
+                onClick={() => void runUrlImport()}
+              >
+                {importingUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import URL"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted">
+              Butuh Upstash + yt-dlp worker. Tanpa itu, job di-queue sebagai PENDING_WORKER.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
@@ -424,6 +554,32 @@ export default function EditorPage() {
                 </button>
                 <button
                   type="button"
+                  className="btn btn-soft"
+                  disabled={transcribing || !file}
+                  onClick={() => void runTranscript()}
+                >
+                  {transcribing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Subtitles className="h-4 w-4" />
+                  )}
+                  Transcript
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-soft"
+                  disabled={reframing || !file}
+                  onClick={() => void runReframe()}
+                >
+                  {reframing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ScanFace className="h-4 w-4" />
+                  )}
+                  Reframe {reframeMode}
+                </button>
+                <button
+                  type="button"
                   className="btn btn-accent"
                   disabled={exporting || !clips.length}
                   onClick={() => void runExport()}
@@ -446,6 +602,18 @@ export default function EditorPage() {
                   Save
                 </button>
               </div>
+              {transcribing && (
+                <p className="mt-2 text-xs text-muted">Whisper: {transcriptStatus}</p>
+              )}
+              {!!segments.length && (
+                <div className="mt-3 max-h-28 overflow-y-auto rounded-lg border border-line bg-bg-soft p-2 text-xs text-muted">
+                  {segments.slice(0, 12).map((s, i) => (
+                    <p key={`${s.start}-${i}`}>
+                      [{formatDuration(s.start)}] {s.text}
+                    </p>
+                  ))}
+                </div>
+              )}
               {exporting && (
                 <div className="mt-4">
                   <div className="mb-1 flex justify-between text-xs text-muted">

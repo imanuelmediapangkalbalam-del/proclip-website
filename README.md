@@ -1,82 +1,72 @@
-# ProClip — Video Clipper SaaS
+# ProClip — Video Clipper SaaS (All-in-One)
 
-Potong video panjang jadi Shorts / Reels / TikTok. MVP client-side (FFmpeg.wasm) + siap scale ke Vercel/Neon/Stripe/R2.
+Full-stack architecture: Next.js App Router + Prisma + Auth.js + FFmpeg.wasm + Whisper (Transformers.js) + MediaPipe reframe + R2 upload + Stripe + Upstash queues.
 
-## Live (GitHub Pages)
+## Important: Deploy target
 
-Setelah Actions hijau & Pages enabled:
+| Target | Status |
+|--------|--------|
+| **Vercel + Neon + R2 + Upstash** | **Production path (required for API/Auth/Stripe)** |
+| GitHub Pages | Tidak cocok untuk full SaaS (tidak ada server/API). Workflow Pages diganti jadi info-only. |
 
-**https://imanuelmediapangkalbalam-del.github.io/proclip-website/**
+Demo lokal tetap jalan **tanpa** DB (credentials demo + localStorage + client FFmpeg).
 
-## MVP yang sudah jalan
-
-- Landing SaaS (features, pricing, FAQ)
-- Auth demo lokal (localStorage)
-- Dashboard: overview, projects, billing, settings
-- Editor: drag-drop upload, preview 16:9/9:16, timeline, mark in/out, multi-clip
-- Keyboard: Space, I/O, ←/→, Shift+←/→
-- Auto-clip (silence heuristic + fallback segment)
-- Caption panel per clip
-- Export batch ZIP 9:16 via FFmpeg.wasm (+ watermark Free)
-- Prisma schema lengkap (phase 2)
-- `.env.example` untuk Neon / Stripe / R2 / Upstash
-
-## Belum di phase MVP (butuh server)
-
-- NextAuth OAuth + Prisma DB
-- Uppy/Tus → Cloudflare R2
-- Whisper.cpp / AssemblyAI
-- MediaPipe face reframe
-- Stripe webhook production
-- BullMQ / Remotion server render
-- Publish TikTok / IG / YouTube
-
-## Stack keputusan (ADR)
-
-| Keputusan | Pilihan MVP | Alasan |
-|-----------|-------------|--------|
-| Processing | FFmpeg.wasm single-thread | $0, privacy, jalan di GitHub Pages tanpa COOP/COEP |
-| Storage project | localStorage | Static export, no DB |
-| Auth | Demo local | Tidak ada server session di Pages |
-| Deploy | GitHub Pages + Actions | Sesuai request deploy di GitHub |
-| Phase 2 | Vercel + Neon + R2 + Stripe | Full SaaS PRD |
-
-## Local dev
+## Quick start
 
 ```bash
 npm install
+npx prisma generate
+cp .env.example .env   # isi DATABASE_URL, NEXTAUTH_SECRET, dll
 npm run dev
 ```
 
 Buka http://localhost:3000
 
-## Build static
+## Fitur yang sudah di-wire
 
-```bash
-# lokal tanpa basePath
-npm run build
+- Landing + pricing + FAQ
+- Auth.js v5: Credentials (+ Google/GitHub/Discord jika env ada)
+- Register API + demo mode tanpa DB
+- Dashboard + editor timeline (I/O, Space, frame step)
+- Upload file lokal + **URL import API** (queue yt-dlp worker)
+- Auto-clip API (silence + keyword)
+- **Whisper tiny** client (`@xenova/transformers`)
+- **Auto-reframe** MediaPipe face / center fallback
+- Export ZIP 9:16 FFmpeg.wasm + watermark Free
+- Stripe portal + webhook routes (aktif jika key ada)
+- R2 presign upload routes
+- Prisma schema lengkap
+- Workers stubs di `workers/`
+- PWA manifest
+- COOP/COEP headers (non-Pages build)
 
-# seperti GitHub Pages
-set GITHUB_PAGES=true
-npm run build
-```
+## Env wajib production
 
-Output: folder `out/`
+Lihat `.env.example`:
 
-## Enable GitHub Pages
+- `DATABASE_URL` (Neon)
+- `NEXTAUTH_SECRET` / `NEXTAUTH_URL`
+- OAuth clients (opsional)
+- `R2_*`
+- `STRIPE_*`
+- `UPSTASH_REDIS_REST_URL` / `TOKEN`
 
-1. Repo → **Settings → Pages**
-2. Source: **GitHub Actions**
-3. Push ke `master` → workflow **Deploy GitHub Pages**
-4. Tunggu deploy selesai
+## Vercel deploy
 
-## Phase 2 next steps
+1. Import repo ke Vercel
+2. Set semua env
+3. Build command: `prisma generate && next build`
+4. Jalankan `prisma migrate deploy` (Neon)
+5. Stripe webhook → `https://<domain>/api/billing/webhook`
 
-1. Hapus `output: 'export'` (atau buat dual mode)
-2. `npx prisma migrate deploy` ke Neon
-3. Auth.js v5 + Google/GitHub
-4. Stripe products + webhook
-5. R2 presigned upload
-6. Optional: Whisper via `@xenova/transformers`
+## URL import (yt-dlp)
 
-Lihat `prisma/schema.prisma` dan `.env.example`.
+Deploy folder `workers/` ke Railway/Render dengan binary yt-dlp, konsumsi queue `download-url` dari Upstash.
+
+## ADR
+
+1. **FFmpeg.wasm client** untuk Free tier (gratis, privacy)
+2. **Whisper via Transformers.js** (bukan compile whisper.cpp manual) — DX lebih mudah
+3. **Prisma 6** (bukan 7) — schema `url = env(...)` standar
+4. **Hybrid auth** — Auth.js + localStorage fallback untuk demo offline
+5. **Production = Vercel**, bukan GitHub Pages

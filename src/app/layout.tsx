@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, Figtree } from "next/font/google";
 import { Toaster } from "sonner";
+import AuthProvider from "@/components/providers/AuthProvider";
 import "./globals.css";
 
 const syne = Syne({
@@ -21,8 +22,8 @@ export const metadata: Metadata = {
     template: "%s · ProClip",
   },
   description:
-    "Potong video panjang jadi Shorts/Reels/TikTok di browser. Timeline editor, auto-clip, FFmpeg.wasm export, ZIP download.",
-  metadataBase: new URL("https://imanuelmediapangkalbalam-del.github.io/proclip-website"),
+    "All-in-one video clipper: upload/URL import, timeline, Whisper captions, auto-reframe 9:16, FFmpeg export, Stripe billing.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -31,8 +32,10 @@ export default function RootLayout({
   return (
     <html lang="id" className={`${syne.variable} ${figtree.variable}`}>
       <body className="font-body antialiased">
-        {children}
-        <Toaster theme="dark" position="top-center" richColors />
+        <AuthProvider>
+          {children}
+          <Toaster theme="dark" position="top-center" richColors />
+        </AuthProvider>
       </body>
     </html>
   );

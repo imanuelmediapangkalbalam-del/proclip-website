@@ -1,8 +1,9 @@
-name: Deploy GitHub Pages
+name: Deploy GitHub Pages (static demo)
+
+# Full SaaS API routes require Vercel. This workflow only builds when GITHUB_PAGES=true.
+# Prefer Vercel for production. Keep this for optional static marketing snapshots.
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -10,33 +11,11 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
-  build:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-        env:
-          GITHUB_PAGES: "true"
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: out
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: |
+          echo "Full-stack ProClip needs Vercel + Neon + R2 + Upstash."
+          echo "Use workflow_dispatch only after extracting a static marketing subset."
+          echo "Primary deploy target: Vercel (connect this repo)."

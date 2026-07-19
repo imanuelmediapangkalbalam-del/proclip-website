@@ -1,0 +1,17 @@
+{
+  "name": "ProClip",
+  "short_name": "ProClip",
+  "description": "Video Clipper SaaS — trim, caption, export Shorts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#2dd4bf",
+  "icons": [
+    {
+      "src": "/next.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
