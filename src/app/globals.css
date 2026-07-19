@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #12141a;
+  --paper: #f4f5f7;
+  --mist: #e4e7ec;
+  --steel: #5a6574;
+  --signal: #c1121f;
+  --signal-deep: #8a0c16;
+  --surface: #ffffff;
+  --line: rgba(18, 20, 26, 0.1);
+  --shadow: 0 24px 60px rgba(18, 20, 26, 0.12);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-mist: var(--mist);
+  --color-steel: var(--steel);
+  --color-signal: var(--signal);
+  --color-signal-deep: var(--signal-deep);
+  --color-surface: var(--surface);
+  --font-display: var(--font-syne);
+  --font-body: var(--font-figtree);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--signal) 25%, white);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--mist);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--steel);
+  border-radius: 999px;
+}
+
+.noise {
+  position: relative;
+}
+
+.noise::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 1;
+}
+
+.brand-mark {
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+}
+
+.section-shell {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .section-shell {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-shell {
+    padding-inline: 2rem;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-signal {
+  background: var(--signal);
+  color: white;
+}
+
+.btn-signal:hover {
+  background: var(--signal-deep);
+}
+
+.btn-ink {
+  background: var(--ink);
+  color: white;
+}
+
+.btn-ink:hover {
+  background: #000;
+}
+
+.btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: white;
+  background: transparent;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-outline {
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: transparent;
+}
+
+.btn-outline:hover {
+  background: var(--ink);
+  color: white;
+}
+
+.field {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field:focus {
+  border-color: var(--signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 18%, transparent);
+}
+
+.field-slot {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  min-height: 3rem;
+  padding: 0.65rem 0.85rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.field-slot[data-active="true"] {
+  border-color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 8%, white);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pan {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pan {
+  animation: pan 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-draw {
+  transform-origin: left;
+  animation: draw 1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
