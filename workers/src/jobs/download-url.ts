@@ -12,7 +12,8 @@ export async function downloadUrlJob(_payload: {
   jobId: string;
   userId: string;
   url: string;
-}) {
+}): Promise<void> {
+  void _payload;
   throw new Error(
     "Deploy workers/ separately with yt-dlp binary + R2 credentials to enable URL import."
   );
