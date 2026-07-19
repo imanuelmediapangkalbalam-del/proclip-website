@@ -34,11 +34,11 @@ export default function AppHomePage() {
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/app/editor/" className="btn btn-accent">
+        <Link href="/app/editor" className="btn btn-accent">
           <Clapperboard className="h-4 w-4" />
           New clip project
         </Link>
-        <Link href="/app/projects/" className="btn btn-ghost">
+        <Link href="/app/projects" className="btn btn-ghost">
           <FolderOpen className="h-4 w-4" />
           Semua project
         </Link>

@@ -30,15 +30,15 @@ export default function LandingNav() {
         </nav>
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
-            <Link href="/app/" className="btn btn-accent">
+            <Link href="/app" className="btn btn-accent">
               Buka dashboard
             </Link>
           ) : (
             <>
-              <Link href="/login/" className="btn btn-ghost">
+              <Link href="/login" className="btn btn-ghost">
                 Login
               </Link>
-              <Link href="/register/" className="btn btn-accent">
+              <Link href="/register" className="btn btn-accent">
                 Start free
               </Link>
             </>

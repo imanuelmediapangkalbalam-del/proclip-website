@@ -17,7 +17,7 @@ export default function ProjectsPage() {
           <h1 className="font-display text-3xl font-semibold">Projects</h1>
           <p className="mt-1 text-muted">Disimpan di localStorage browser.</p>
         </div>
-        <Link href="/app/editor/" className="btn btn-accent">
+        <Link href="/app/editor" className="btn btn-accent">
           New project
         </Link>
       </div>
@@ -43,7 +43,7 @@ export default function ProjectsPage() {
               {projects.map((p) => (
                 <tr key={p.id} className="border-t border-line">
                   <td className="px-4 py-3">
-                    <Link href="/app/editor/" className="font-medium hover:text-accent">
+                    <Link href="/app/editor" className="font-medium hover:text-accent">
                       {p.title}
                     </Link>
                   </td>

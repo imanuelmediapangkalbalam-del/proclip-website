@@ -20,7 +20,7 @@ export default function HomePage() {
           FFmpeg.wasm — langsung di browser, tanpa antri server.
         </p>
         <div className="animate-rise mt-8 flex flex-wrap gap-3">
-          <Link href="/register/" className="btn btn-accent">
+          <Link href="/register" className="btn btn-accent">
             Start free
           </Link>
           <a href="#features" className="btn btn-ghost">
@@ -111,7 +111,7 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <Link
-                  href="/register/"
+                  href="/register"
                   className={`btn mt-8 w-full ${"highlighted" in plan && plan.highlighted ? "btn-accent" : "btn-ghost"}`}
                 >
                   Pilih {plan.name}
@@ -145,7 +145,7 @@ export default function HomePage() {
               Buat akun demo lokal, upload video, mark in/out, export ZIP.
             </p>
           </div>
-          <Link href="/register/" className="btn btn-accent mt-6 md:mt-0">
+          <Link href="/register" className="btn btn-accent mt-6 md:mt-0">
             Mulai sekarang
           </Link>
         </div>
